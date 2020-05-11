@@ -9,15 +9,18 @@ int main(int argc, char* argv[]){
 
     const auto key = std::string(argv[1]);
     std::cout<<"key provided:"<<key<<"\n";
-    TgBot::Bot bot(key, TgBot::CurlHttpClient());
-    std::cout<<"key in tglib:"<<bot.getToken()<<"\n";
-    bot.getEvents().onCommand("start",
+    TgBot::CurlHttpClient curl_client;
+    TgBot::Bot bot(key, curl_client);
+
+    const auto start_cmd = "start";
+    const auto hello_cmd = "getHello";
+    bot.getEvents().onCommand(start_cmd,
         [&bot](TgBot::Message::Ptr message) {
             auto start_message = "Hello and welcome to HelloWorld bot by me!\n"
                 "type /getHello to recieve greetings";
             bot.getApi().sendMessage(message->chat->id, start_message);
     });
-    bot.getEvents().onCommand("getHello",
+    bot.getEvents().onCommand(hello_cmd,
         [&bot](TgBot::Message::Ptr message){
             const auto uname = message->chat->username;
             const auto hello_world = "Have a nice day, "+uname;
@@ -26,20 +29,13 @@ int main(int argc, char* argv[]){
     );
     bot.getEvents().onAnyMessage(
         [&bot](TgBot::Message::Ptr message) {
-            std::cout<<"User wrote:"<<message->text<<"\n";
-            if (StringTools::startsWith(message->text, "/start")) {
-                return;
-            }
-        auto chat_id = message->chat->id;
-        auto mes = "Your message is: " + message->text;
-        bot.getApi().sendMessage(chat_id, mes);
+            std::cout<<"User "<<message->chat->username<<" wrote:"<<message->text<<"\n";
     });
     try {
         auto bot_uname = bot.getApi().getMe()->username;
         std::cout<< "Bot username: "<<bot_uname<<"\n";
         TgBot::TgLongPoll longPoll(bot);
         while (true) {
-            std::cout<<"Long poll started\n";
             longPoll.start();
         }
     } catch (TgBot::TgException& e) {
